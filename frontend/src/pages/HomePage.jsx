@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Search, MapPin, ArrowRight, ShieldCheck, Layers, Building2, Scale } from "lucide-react";
 import { apiRequest } from "../api/client";
 import ProductCard from "../components/ProductCard";
-import ProductImage from "../components/ProductImage";
+import HeroSupplierShowcase from "../components/HeroSupplierShowcase";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function HomePage() {
 
   useEffect(() => {
     Promise.allSettled([
-      apiRequest("/products?limit=6"),
+      apiRequest("/products?limit=12"),
       apiRequest("/sourcing/categories"),
     ]).then(([prodRes, catRes]) => {
       if (prodRes.status === "fulfilled") {
@@ -110,19 +110,7 @@ export default function HomePage() {
           </div>
 
           <div className="lg:col-span-5 flex items-stretch">
-            <div className="w-full rounded-xl overflow-hidden border border-white/15 bg-[#061533] relative min-h-[260px]">
-              <ProductImage
-                src="/src/assets/images/wholesale_cotton_fabric_1795544890535.jpg"
-                alt="Wholesale cotton textile rolls in Bangladesh"
-                className="w-full h-full min-h-[260px]"
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#061533]/95 via-[#061533]/65 to-transparent p-5">
-                <div className="text-xs text-slate-300">Featured Hub · Islampur, Dhaka</div>
-                <div className="text-sm font-semibold text-white mt-0.5">
-                  Direct sourcing from manufacturers &amp; wholesale depots
-                </div>
-              </div>
-            </div>
+            <HeroSupplierShowcase products={products} />
           </div>
         </div>
       </section>
@@ -223,7 +211,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => (
+              {products.slice(0, 6).map((product) => (
                 <ProductCard key={product._id} product={product} />
               ))}
             </div>
