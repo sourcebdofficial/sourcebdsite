@@ -1,0 +1,6 @@
+{
+  "name": "SourceBD",
+  "description": "A Web-Based Wholesale Supplier and Raw Material Discovery Platform for Bangladesh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
