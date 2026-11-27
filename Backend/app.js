@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const { setMemoryMode } = require("./db");
-const { seedMemoryData } = require("./seed-data");
+const { seedDemoData } = require("./seed-data");
 
 const authRoutes = require("./auth.routes");
 const buyerRoutes = require("./buyer.routes");
@@ -30,6 +30,14 @@ async function initDatabase() {
       });
       setMemoryMode(false);
       console.log("MongoDB connected successfully!");
+      try {
+        const result = await seedDemoData();
+        if (result?.seeded) {
+          console.log("SourceBD demo catalog seeded into MongoDB.");
+        }
+      } catch (seedError) {
+        console.warn("MongoDB demo seed skipped:", seedError.message);
+      }
       return { mode: "mongodb" };
     } catch (error) {
       console.warn(
@@ -39,7 +47,7 @@ async function initDatabase() {
     }
   }
   setMemoryMode(true);
-  await seedMemoryData();
+  await seedDemoData();
   console.log("SourceBD in-memory store active (seed data ready).");
   return { mode: "memory" };
 }

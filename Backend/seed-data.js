@@ -11,19 +11,38 @@ const IMG_PACKAGING = "/src/assets/images/corrugated_packaging_boxes_17955448903
 const IMG_ELECTRONICS = "/src/assets/images/electronics_power_supply_1795544891798.jpg";
 const IMG_AGRO = "/src/assets/images/wholesale_spices_grains_1795544891683.jpg";
 
-let seeded = false;
+let activeSeedPromise = null;
 
-async function seedMemoryData() {
-  if (seeded) return;
-  const userCount = await User.countDocuments();
-  if (userCount > 0) {
-    seeded = true;
-    return;
+async function ensureUser(userData) {
+  const existing = await User.findOne({ email: userData.email });
+  if (existing) return existing;
+  return User.create(userData);
+}
+
+async function ensureCategory(categoryData) {
+  const existing = await Category.findOne({ name: categoryData.name });
+  if (existing) return existing;
+  return Category.create(categoryData);
+}
+
+async function ensureReview(reviewData) {
+  const existing = await Review.findOne({
+    buyer: reviewData.buyer,
+    product: reviewData.product,
+  });
+  if (existing) return existing;
+  return Review.create(reviewData);
+}
+
+async function runDemoSeed() {
+  const existingProductCount = await Product.countDocuments();
+  if (existingProductCount > 0) {
+    return { seeded: false, reason: "products_already_exist" };
   }
 
   const passwordHash = await bcrypt.hash("SourceBD@123", 10);
 
-  const admin = await User.create({
+  const admin = await ensureUser({
     name: "Nurul Amin (Admin)",
     email: "admin@sourcebd.demo",
     phone: "01711000000",
@@ -36,7 +55,7 @@ async function seedMemoryData() {
     isActive: true,
   });
 
-  const buyer = await User.create({
+  const buyer = await ensureUser({
     name: "Rahim Uddin",
     email: "buyer@sourcebd.demo",
     phone: "01711000001",
@@ -48,7 +67,19 @@ async function seedMemoryData() {
     isActive: true,
   });
 
-  const textileSupplier = await User.create({
+  const buyerTwo = await ensureUser({
+    name: "Nusrat Jahan",
+    email: "nusrat.buyer@sourcebd.demo",
+    phone: "01819000011",
+    password: passwordHash,
+    role: "buyer",
+    isEmailVerified: true,
+    isPhoneVerified: true,
+    isVerified: true,
+    isActive: true,
+  });
+
+  const textileSupplier = await ensureUser({
     name: "Kamal Hossain",
     email: "supplier@sourcebd.demo",
     phone: "01711000002",
@@ -77,7 +108,7 @@ async function seedMemoryData() {
     isActive: true,
   });
 
-  const packagingSupplier = await User.create({
+  const packagingSupplier = await ensureUser({
     name: "Farhana Yasmin",
     email: "packaging@sourcebd.demo",
     phone: "01711000003",
@@ -106,7 +137,7 @@ async function seedMemoryData() {
     isActive: true,
   });
 
-  const electronicsSupplier = await User.create({
+  const electronicsSupplier = await ensureUser({
     name: "Tanvir Ahmed",
     email: "electronics@sourcebd.demo",
     phone: "01711000004",
@@ -138,7 +169,7 @@ async function seedMemoryData() {
     isActive: true,
   });
 
-  const agroSupplier = await User.create({
+  const agroSupplier = await ensureUser({
     name: "Mizanur Rahman",
     email: "agro@sourcebd.demo",
     phone: "01711000005",
@@ -157,7 +188,7 @@ async function seedMemoryData() {
     isActive: true,
   });
 
-  const printSupplier = await User.create({
+  const printSupplier = await ensureUser({
     name: "Sadia Islam",
     email: "print@sourcebd.demo",
     phone: "01711000006",
@@ -176,11 +207,26 @@ async function seedMemoryData() {
     isActive: true,
   });
 
-  await Category.create({ name: "Garments & Textile", description: "Fabrics, threads, buttons & zippers" });
-  await Category.create({ name: "Packaging", description: "Carton boxes, polybags & tape" });
-  await Category.create({ name: "Electronics", description: "Components, LED drivers & cables" });
-  await Category.create({ name: "Food & Beverage", description: "Bulk spices, grains & ingredients" });
-  await Category.create({ name: "Printing Materials", description: "Labels, art cards, paper & inks" });
+  await ensureCategory({
+    name: "Garments & Textile",
+    description: "Fabrics, threads, buttons & zippers",
+  });
+  await ensureCategory({
+    name: "Packaging",
+    description: "Carton boxes, polybags & tape",
+  });
+  await ensureCategory({
+    name: "Electronics",
+    description: "Components, LED drivers & cables",
+  });
+  await ensureCategory({
+    name: "Food & Beverage",
+    description: "Bulk spices, grains & ingredients",
+  });
+  await ensureCategory({
+    name: "Printing Materials",
+    description: "Labels, art cards, paper & inks",
+  });
 
   const p1 = await Product.create({
     name: "100% Combed Cotton Fabric (44-inch)",
@@ -302,22 +348,70 @@ async function seedMemoryData() {
     status: "published",
   });
 
-  const order = await Order.create({
-    buyer: buyer._id,
-    supplier: textileSupplier._id,
-    product: p1._id,
-    productName: p1.name,
-    quantity: 60,
-    unitPrice: p1.price,
-    currency: p1.currency,
-    totalPrice: 60 * p1.price,
-    note: "Please deliver in two bundles.",
-    shippingAddress: "Mirpur-10, Dhaka",
-    contactPhone: buyer.phone,
-    status: "delivered",
+  const p9 = await Product.create({
+    name: "Industrial Stretch Wrap Film Roll (2.5kg)",
+    description:
+      "High-clarity 23-micron LLDPE pallet stretch film for warehouse dispatch and export carton wrapping.",
+    category: "Packaging",
+    price: 680,
+    currency: "BDT",
+    quantity: 450,
+    unit: "roll",
+    minimumOrderQuantity: 10,
+    supplier: packagingSupplier._id,
+    images: [IMG_PACKAGING],
+    status: "published",
   });
 
-  await Review.create({
+  const p10 = await Product.create({
+    name: "24V 10A Waterproof Outdoor LED Driver",
+    description:
+      "IP67 aluminum-housing constant voltage driver designed for outdoor billboards, factory lighting, and signage.",
+    category: "Electronics",
+    price: 620,
+    currency: "BDT",
+    quantity: 320,
+    unit: "unit",
+    minimumOrderQuantity: 15,
+    supplier: electronicsSupplier._id,
+    images: [IMG_ELECTRONICS],
+    status: "published",
+  });
+
+  const existingOrderCount = await Order.countDocuments();
+  if (existingOrderCount === 0) {
+    await Order.create({
+      buyer: buyer._id,
+      supplier: textileSupplier._id,
+      product: p1._id,
+      productName: p1.name,
+      quantity: 60,
+      unitPrice: p1.price,
+      currency: p1.currency,
+      totalPrice: 60 * p1.price,
+      note: "Please deliver in two bundles.",
+      shippingAddress: "Mirpur-10, Dhaka",
+      contactPhone: buyer.phone,
+      status: "delivered",
+    });
+
+    await Order.create({
+      buyer: buyerTwo._id,
+      supplier: packagingSupplier._id,
+      product: p3._id,
+      productName: p3.name,
+      quantity: 200,
+      unitPrice: p3.price,
+      currency: p3.currency,
+      totalPrice: 200 * p3.price,
+      note: "Deliver to Uttara Sector 7 warehouse before 5 PM.",
+      shippingAddress: "House 22, Road 9, Uttara Sector 7, Dhaka",
+      contactPhone: buyerTwo.phone,
+      status: "pending",
+    });
+  }
+
+  await ensureReview({
     buyer: buyer._id,
     product: p1._id,
     supplier: textileSupplier._id,
@@ -326,7 +420,7 @@ async function seedMemoryData() {
     status: "approved",
   });
 
-  await Review.create({
+  await ensureReview({
     buyer: buyer._id,
     product: p3._id,
     supplier: packagingSupplier._id,
@@ -335,7 +429,7 @@ async function seedMemoryData() {
     status: "approved",
   });
 
-  await Review.create({
+  await ensureReview({
     buyer: buyer._id,
     product: p6._id,
     supplier: agroSupplier._id,
@@ -344,25 +438,54 @@ async function seedMemoryData() {
     status: "approved",
   });
 
-  await Inquiry.create({
-    buyer: buyer._id,
-    supplier: packagingSupplier._id,
-    product: p3._id,
-    productName: p3.name,
-    details: "Need custom single-color logo print on 500 boxes. What is the lead time?",
-    quantity: 500,
-    targetPrice: 35,
-    status: "new",
-  });
+  const existingInquiryCount = await Inquiry.countDocuments();
+  if (existingInquiryCount === 0) {
+    await Inquiry.create({
+      buyer: buyer._id,
+      supplier: packagingSupplier._id,
+      product: p3._id,
+      productName: p3.name,
+      details: "Need custom single-color logo print on 500 boxes. What is the lead time?",
+      quantity: 500,
+      targetPrice: 35,
+      status: "new",
+    });
+
+    await Inquiry.create({
+      buyer: buyerTwo._id,
+      supplier: textileSupplier._id,
+      product: p2._id,
+      productName: p2.name,
+      details: "Can you supply navy blue and khaki shade cards before a 500-yard bulk order?",
+      quantity: 500,
+      targetPrice: 250,
+      status: "responded",
+      supplierResponse: "Yes, physical swatches are ready at Islampur and can be couriered tomorrow.",
+    });
+  }
 
   void admin;
-  void order;
-  void p2;
   void p4;
   void p5;
   void p7;
   void p8;
-  seeded = true;
+  void p9;
+  void p10;
+
+  return { seeded: true };
 }
 
-module.exports = { seedMemoryData };
+async function seedMemoryData() {
+  if (activeSeedPromise) {
+    return activeSeedPromise;
+  }
+  activeSeedPromise = runDemoSeed().finally(() => {
+    activeSeedPromise = null;
+  });
+  return activeSeedPromise;
+}
+
+module.exports = {
+  seedMemoryData,
+  seedDemoData: seedMemoryData,
+};

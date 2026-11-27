@@ -5,7 +5,7 @@ import express from "express";
 
 const require = createRequire(import.meta.url);
 const { setMemoryMode } = require("./db.js");
-const { seedMemoryData } = require("./seed-data.js");
+const { seedMemoryData, seedDemoData } = require("./seed-data.js");
 const { createApiRouter } = require("./app.js");
 const User = require("./user.model.js");
 const Product = require("./product.model.js");
@@ -15,9 +15,14 @@ const Review = require("./review.model.js");
 test("in-memory store seeds users, products, orders and supports populate + aggregate", async () => {
   setMemoryMode(true);
   await seedMemoryData();
+  const reseedResult = await seedDemoData();
+  assert.equal(reseedResult.seeded, false);
 
   const defaultBuyer = await User.findOne({ email: "buyer@sourcebd.demo" });
   assert.equal(defaultBuyer.password, undefined, "Password should be hidden by default");
+
+  const buyerTwo = await User.findOne({ email: "nusrat.buyer@sourcebd.demo" });
+  assert.ok(buyerTwo, "Second demo buyer should exist");
 
   const buyer = await User.findOne({ email: "buyer@sourcebd.demo" }).select("+password");
   assert.ok(buyer, "Demo buyer should exist");
@@ -29,7 +34,7 @@ test("in-memory store seeds users, products, orders and supports populate + aggr
     .populate("supplier", "name isVerified businessName city")
     .sort({ createdAt: -1 })
     .lean();
-  assert.equal(products.length >= 8, true);
+  assert.equal(products.length >= 10, true);
   assert.ok(products[0].supplier?.businessName, "Supplier should be populated");
 
   const cotton = await Product.find({

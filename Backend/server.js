@@ -52,6 +52,15 @@ async function startServer() {
     await mongoose.connect(process.env.MONGODB_URI);
     require("./db").setMemoryMode(false);
     console.log("MongoDB connected successfully!");
+    try {
+      const { seedDemoData } = require("./seed-data");
+      const result = await seedDemoData();
+      if (result?.seeded) {
+        console.log("SourceBD demo catalog seeded into MongoDB.");
+      }
+    } catch (seedError) {
+      console.warn("MongoDB demo seed skipped:", seedError.message);
+    }
 
     app.listen(PORT, () => {
       console.log(`SourceBD server running at http://localhost:${PORT}`);
